@@ -1,0 +1,235 @@
+model Library
+
+enum BorrowStatus {Borrowed, NotBorrowed}
+enum ReserveStatus {Reserved, NotReserved}
+
+
+class Book
+	attributes
+		title: String
+		author: String
+		amount: Integer init = 2
+		available: Integer init = 2
+
+	operations
+		createCopy()
+		begin
+			declare c: Copy;
+			for i in Sequence{1..self.amount} do
+				self.available := self.amount;
+				c := new Copy;
+				c.borrowed := #NotBorrowed;
+				c.book := self;
+				c.reserved := #NotReserved;
+				insert(self, c) into OfType;
+			end
+		end
+
+		borrow()
+		begin
+			self.available := self.available - 1;
+		end
+
+		return()
+		begin
+			self.available := self.available + 1;
+		end
+
+		statemachines
+			psm States
+			states
+				newTitle: initial
+				available[available > 0]
+				unavailable[available = 0]
+			transitions
+				newTitle -> available { create }
+				available -> unavailable { [available = 1] borrow() }
+				available -> available { [available > 1] borrow() }
+				available -> available { return() }
+				unavailable -> available { return() }
+		end
+end
+
+
+class Copy
+	attributes
+		book: Book
+		borrowed: BorrowStatus init = #NotBorrowed
+		reserved: ReserveStatus init = #NotReserved
+		onLoan: Boolean
+
+	operations
+		borrow(p: Person)
+		begin
+			for p1 in self.reservation do
+				if p = p1 then
+					self.reserved := #NotReserved;
+					delete(self, p) from HasReserved;
+				end
+			end;
+
+			if self.reserved = #NotReserved then
+				insert(p, self) into HasBorrowed;
+				self.borrowed := #Borrowed;
+				self.book.borrow();
+				p.amountBorrowed := p.amountBorrowed + 1;
+			end
+		end
+
+		return(p: Person)
+		begin
+			delete(p, self) from HasBorrowed;
+			self.borrowed := #NotBorrowed;
+			self.book.return();
+			p.amountBorrowed := p.amountBorrowed - 1;
+		end
+
+		reserve(p: Person)
+		begin
+			self.reserved := #Reserved;
+			insert(self, p) into HasReserved;
+			WriteLine('This copy has been reserved for you');
+		end
+
+		removeReservation(p: Person)
+		begin
+			if self.reserved = #NotReserved then
+				WriteLine('This Copy does not have a reservation to remove');
+			else
+				self.reserved := #NotReserved;
+				delete(self, p) from HasReserved;
+			end
+		end
+end
+
+
+class Person 
+	attributes
+		name: String
+		address: String
+		amountBorrowed: Integer init = 0
+		no_onloan: Integer init = 0
+		limit: Integer init = 6
+		fine: Integer init = 0
+		status: String
+
+	operations
+		borrow(c: Copy)
+		begin
+			declare ok: Boolean;
+			ok := self.okToBorrow();
+			c.borrow(self);
+		end
+		
+		okToBorrow(): Boolean 
+		begin
+			if self.no_onloan < 2 then
+				result := true
+			else 
+				result := false
+			end
+		end
+
+		return(c: Copy)
+		begin
+			delete(self, c) from HasBorrowed;
+			self.no_onloan := self.no_onloan - 1;
+			c.return(self)
+		end 
+
+		viewBorrowed()
+		begin
+			for c in self.borrowed do
+				WriteLine(c.book.title);
+			end;
+		end
+
+		payFine(amount: Integer)
+
+		reserve(c: Copy)
+		begin
+			c.reserve(self)
+		end
+
+		removeReservation(c: Copy)
+		begin
+			c.removeReservation(self)
+		end
+end
+
+
+class Employee < Person
+	attributes
+		employeeID: Integer
+		role: String
+		
+	operations
+		applyFine(p: Person, amount: Integer)
+		begin
+			if p.fine + amount <= 50 then
+				p.fine := p.fine + amount
+			else
+				WriteLine('Fine amount exceeds limit of 50');
+			end
+		end
+end
+
+
+class Member < Person
+	attributes
+		memberID: Integer
+end
+
+
+association OfType between
+	Book[1] role book
+	Copy[0..*] role type
+end
+
+association HasBorrowed between
+	Person[0..1] role borrower
+	Copy[0..*] role borrowed
+end
+
+association HasReserved between
+	Copy[0..1] role copy
+	Person[0..*] role reservation
+end
+
+
+constraints
+
+context Person::borrow(c: Copy)
+	pre amountBorrowedLimit: self.amountBorrowed < self.limit
+	pre notAlreadyBorrowed: self.borrowed -> excludes(c)
+	pre notSameBook: self.borrowed.book -> excludes(c.book)
+	pre noOnLoanLimit: self.no_onloan < 2
+
+context Copy::borrow(p: Person)
+	pre notAlreadyBorrowed: self.borrowed = #NotBorrowed
+
+context Book::borrow()
+	post sufficientAvailable: self.available >= 0
+
+context Person::return(c: Copy)
+	pre borrowedCopy: self.borrowed -> includes(c)
+	post notBorrowedCopy: self.borrowed -> excludes(c)
+
+context Person::payFine(amount: Integer)
+	pre hasFine: self.fine > 0
+	post fineNotNegative: self.fine >= 0
+
+context Person::reserve(c: Copy)
+	pre noReservation: c.reservation -> isEmpty()
+
+context Copy::reserve(p: Person)
+	pre notReserved: self.reserved = #NotReserved
+	pre notAlreadyBorrowed: self.borrowed = #NotBorrowed
+
+context Person::removeReservation(c: Copy)
+	pre hasReservation: c.reservation -> includes(self)
+	post noReservation: c.reservation -> isEmpty()
+
+context Employee::applyFine(p: Person, amount: Integer)
+	pre fineNotExceedLimit: p.fine < 50 
+	post fineNotExceedLimit2: p.fine < 50
