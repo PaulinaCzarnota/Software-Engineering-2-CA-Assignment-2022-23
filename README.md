@@ -1,7 +1,7 @@
-This is my CA assignment for the Software Engineering 2 module in the second year of Computer Science at TU Dublin. 
+This is my continuous assessment (CA) assignment for the Software Engineering 2 module in the second year of Computer Science at TU Dublin.
 
-The assignment involves extending and testing a more comprehensive USE model for the Library system. 
+In this assignment, I extended and tested a detailed USE model for a Library system. I selected this topic due to my keen interest in library management systems and my previous hands-on experience with related code in USE during lab sessions.
 
-This assignment was chosen due to its alignment with my interests and prior experience working on Library code in USE during labs. It presents an exciting challenge by exploring extra use case scenarios and creating various types of diagrams to visualize the system's components and interactions. Additionally, it involves testing constraints with objects and using SOIL implementations for easier testing. 
+The project posed an exciting challenge, allowing me to explore additional use case scenarios and develop various UML diagrams to illustrate the system's components and their interactions. Additionally, I tested constraints with objects and implemented SOIL for efficient testing, enhancing the overall robustness of the model.
 
-Grade Received: 65%
+**Grade Received:** 65%
