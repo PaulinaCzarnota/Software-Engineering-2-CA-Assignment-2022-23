@@ -1,6 +1,6 @@
 This repository contains my continuous assessment (CA) assignment for the Software Engineering 2 module, completed during my second year of Computer Science at TU Dublin.
 
-## Project Overview
+# Project Overview
 
 In this assignment, I extended and tested a comprehensive USE model for a library management system. I chose this topic due to my strong interest in library systems and my hands-on experience with related code in USE during previous lab sessions.
 
